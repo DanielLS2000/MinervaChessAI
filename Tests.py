@@ -4,6 +4,7 @@ import chess.engine
 import time
 import os
 from ChessAi import ChessAi
+from ChessAi002 import ChessAi002
 
 
 def against_human(cor):
@@ -63,7 +64,7 @@ def against_itself(qnt, show):
     show = True if show == "y" else False
 
     ai_white = ChessAi(True)
-    ai_black = ChessAi(False)
+    ai_black = ChessAi002(False)
 
     match_history = {
         "White": 0,
@@ -89,16 +90,16 @@ def against_itself(qnt, show):
                 movehistory.append(move)
                 board.push(move)
                 if show:
-                    print("---- white turn -----\n")
+                    print("---- white turn(MiniMax) -----\n")
                     print(f"move: {move}")
                     print(board)
             else:
 
-                move = ai_black.make_move(board, 3)
+                move = ai_black.negac_star_root(board, 3)
                 movehistory.append(move)
                 board.push(move)
                 if show:
-                    print("---- black turn -----\n")
+                    print("---- black turn(NegaC) -----\n")
                     print(f"move: {move}")
                     print(board)
 
@@ -106,7 +107,7 @@ def against_itself(qnt, show):
         print(board.outcome().winner)
         if board.outcome().winner:
             match_history["White"] += 1
-        elif not board.outcome().winner:
+        elif board.outcome().winner == False:
             match_history["Black"] += 1
         else:
             match_history["Draw"] += 1
@@ -167,7 +168,7 @@ def against_stockfish(qnt, show):
         print(board.outcome().winner)
         if board.outcome().winner:
             match_history["White"] += 1
-        elif not board.outcome().winner:
+        elif board.outcome().winner == False:
             match_history["Black"] += 1
         else:
             match_history["Draw"] += 1

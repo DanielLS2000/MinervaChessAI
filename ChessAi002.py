@@ -1,8 +1,9 @@
-import random
 import chess
 
+from random import choice
 
-class ChessAi:
+
+class ChessAi002:
     def __init__(self, color: bool):
         self.color = color
         self.pawntable = [
@@ -106,60 +107,50 @@ class ChessAi:
         else:
             return -valor
 
-    def minimax(self, board, depth: int, alpha=float('-inf'), beta=float('inf')):
-        if depth == 0 or board.is_checkmate():
-            return self.evaluate(board)
+    def negac_star(self, board, depth, alpha, beta, color):
+        if depth == 0 or board.is_game_over():
+            return color * self.evaluate(board)
 
-        if board.turn:
-            maxValue = float('-inf')
-            for move in board.legal_moves:
-                board.push(move)
-                valor = self.minimax(board, depth - 1, alpha, beta)
-                board.pop()
-                maxValue = max(maxValue, valor)
+        legal_moves = list(board.legal_moves)
 
-                alpha = max(alpha, valor)
-                if beta <= alpha:
+        for move in legal_moves:
+            board.push(move)
+            value = -self.negac_star(board, depth - 1, -beta, -alpha, -color)
+            board.pop()
+
+            if value > alpha:
+                alpha = value
+                if alpha >= beta:
                     break
-            return maxValue
-        else:
-            minValue = float('inf')
-            for move in board.legal_moves:
-                board.push(move)
-                valor = self.minimax(board, depth - 1, alpha, beta)
-                board.pop()
-                minValue = min(minValue, valor)
-                beta = min(beta, valor)
-                if beta <= alpha:
-                    break
-            return minValue
+
+        return alpha
+
+    def negac_star_root(self, board, depth):
+        best_move = None
+        alpha = float('-inf')
+        beta = float('inf')
+        color = 1 if board.turn == chess.WHITE else -1
+
+        legal_moves = list(board.legal_moves)
+
+        for move in legal_moves:
+            board.push(move)
+            value = -self.negac_star(board, depth - 1, -beta, -alpha, -color)
+            board.pop()
+
+            if value > alpha:
+                alpha = value
+                best_move = move
+
+        return best_move
 
     def make_move(self, board, depth):
-        best_move = chess.Move.null()
-        best_value = float('-inf')
-        if self.color != board.turn:
-            for move in board.legal_moves:
-                # print(f"Evaluating move {move} as { 'white'if board.turn == True else 'black'}, from {board.legal_moves}")
-                board.push(move)
-                board_value = self.minimax(board, depth - 1)
-                if board_value > best_value:
-                    best_value = board_value
-                    best_move = move
-                board.pop()
-            return best_move
-        else:
-            for move in board.legal_moves:
-                board.push(move)
-                board_value = -self.minimax(board, depth - 1)
-                if board_value > best_value:
-                    best_value = board_value
-                    best_move = move
-                board.pop()
-            return best_move
+        self.negac_star_root(board, depth)
 
-    def move_random(self, board):
+    @staticmethod
+    def move_random(board):
         legal_moves = list(board.legal_moves)
         if legal_moves:
-            return random.choice(legal_moves)
+            return choice(legal_moves)
         else:
             return None
