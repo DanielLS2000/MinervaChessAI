@@ -1,11 +1,11 @@
 import chess
+import time
 
 from random import choice
 
 
 class ChessAi002:
-    def __init__(self, color: bool):
-        self.color = color
+    def __init__(self):
         self.pawntable = [
             0, 0, 0, 0, 0, 0, 0, 0,
             5, 10, 10, -20, -20, 10, 10, 5,
@@ -64,10 +64,10 @@ class ChessAi002:
 
     def evaluate(self, board):
         if board.is_checkmate():
-            if board.turn == self.color:
-                return float('inf')
+            if board.turn:
+                return -999999999
             else:
-                return float('-inf')
+                return 999999999
         if board.is_stalemate():
             return 0
         if board.is_insufficient_material():
@@ -85,21 +85,14 @@ class ChessAi002:
         bq = len(board.pieces(chess.QUEEN, chess.BLACK))
 
         material = 100 * (wp - bp) + 320 * (wn - bn) + 330 * (wb - bb) + 500 * (wr - br) + 900 * (wq - bq)
-        pawnsq = sum([self.pawntable[i] for i in board.pieces(chess.PAWN, chess.WHITE)])
-        pawnsq = pawnsq + sum([-self.pawntable[chess.square_mirror(i)] for i in board.pieces(chess.PAWN, chess.BLACK)])
-        knightsq = sum([self.knightstable[i] for i in board.pieces(chess.KNIGHT, chess.WHITE)])
-        knightsq = knightsq + sum(
-            [-self.knightstable[chess.square_mirror(i)] for i in board.pieces(chess.KNIGHT, chess.BLACK)])
-        bishopsq = sum([self.bishopstable[i] for i in board.pieces(chess.BISHOP, chess.WHITE)])
-        bishopsq = bishopsq + sum(
-            [-self.bishopstable[chess.square_mirror(i)] for i in board.pieces(chess.BISHOP, chess.BLACK)])
-        rooksq = sum([self.rookstable[i] for i in board.pieces(chess.ROOK, chess.WHITE)])
-        rooksq = rooksq + sum([-self.rookstable[chess.square_mirror(i)] for i in board.pieces(chess.ROOK, chess.BLACK)])
-        queensq = sum([self.queenstable[i] for i in board.pieces(chess.QUEEN, chess.WHITE)])
-        queensq = queensq + sum(
-            [-self.queenstable[chess.square_mirror(i)] for i in board.pieces(chess.QUEEN, chess.BLACK)])
-        kingsq = sum([self.kingstable[i] for i in board.pieces(chess.KING, chess.WHITE)])
-        kingsq = kingsq + sum([-self.kingstable[chess.square_mirror(i)] for i in board.pieces(chess.KING, chess.BLACK)])
+        color_multiplier = 1 if board.turn else -1
+
+        pawnsq = sum(color_multiplier * self.pawntable[i] for i in board.pieces(chess.PAWN, chess.WHITE))
+        knightsq = sum(color_multiplier * self.knightstable[i] for i in board.pieces(chess.KNIGHT, chess.WHITE))
+        bishopsq = sum(color_multiplier * self.bishopstable[i] for i in board.pieces(chess.BISHOP, chess.WHITE))
+        rooksq = sum(color_multiplier * self.rookstable[i] for i in board.pieces(chess.ROOK, chess.WHITE))
+        queensq = sum(color_multiplier * self.queenstable[i] for i in board.pieces(chess.QUEEN, chess.WHITE))
+        kingsq = sum(color_multiplier * self.kingstable[i] for i in board.pieces(chess.KING, chess.WHITE))
 
         valor = material + pawnsq + knightsq + bishopsq + rooksq + queensq + kingsq
         if board.turn:
@@ -107,7 +100,7 @@ class ChessAi002:
         else:
             return -valor
 
-    def negac_star(self, board, depth, alpha, beta, color):
+    def negac_star(self, board, depth: int, alpha: int, beta: int, color: int):
         if depth == 0 or board.is_game_over():
             return color * self.evaluate(board)
 
@@ -125,11 +118,11 @@ class ChessAi002:
 
         return alpha
 
-    def negac_star_root(self, board, depth):
+    def negac_star_root(self, board, depth: int):
         best_move = None
-        alpha = float('-inf')
-        beta = float('inf')
-        color = 1 if board.turn == chess.WHITE else -1
+        alpha = -9999999999
+        beta = 9999999999
+        color = 1 if board.turn else -1
 
         legal_moves = list(board.legal_moves)
 
@@ -144,8 +137,8 @@ class ChessAi002:
 
         return best_move
 
-    def make_move(self, board, depth):
-        self.negac_star_root(board, depth)
+    def make_move(self, board, depth: int):
+        return self.negac_star_root(board, depth)
 
     @staticmethod
     def move_random(board):

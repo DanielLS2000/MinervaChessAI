@@ -1,5 +1,6 @@
 import random
 import chess
+import time
 
 
 class ChessAi:
