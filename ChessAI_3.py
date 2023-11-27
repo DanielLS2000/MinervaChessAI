@@ -122,15 +122,15 @@ class ChessAiv3:
 
         pass
 
-    def negac_star(self, board, depth: int, alpha: int, beta: int, color: int):
+    def negac_star(self, board, depth: int, alpha: int, beta: int):
         if depth == 0 or board.is_game_over():
-            return color * self.evaluate(board)
+            return self.evaluate(board)
 
         legal_moves = list(board.legal_moves)
 
         for move in legal_moves:
             board.push(move)
-            value = -self.negac_star(board, depth - 1, -beta, -alpha, -color)
+            value = -self.negac_star(board, depth - 1, -beta, -alpha)
             board.pop()
 
             if value > alpha:
@@ -144,13 +144,12 @@ class ChessAiv3:
         best_move = None
         alpha = -9999999999
         beta = 9999999999
-        color = 1 if board.turn else -1
 
         legal_moves = list(board.legal_moves)
 
         for move in legal_moves:
             board.push(move)
-            value = -self.negac_star(board, depth - 1, -beta, -alpha, -color)
+            value = -self.negac_star(board, depth - 1, -beta, -alpha)
             board.pop()
 
             if value > alpha:
