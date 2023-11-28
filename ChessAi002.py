@@ -1,9 +1,6 @@
 ChessAi002 = '''
 import chess
 import chess.polyglot
-import time
-
-from random import choice
 
 
 class ChessAi002:

@@ -18,24 +18,27 @@ class ChessGameGUI(QWidget):
         super().__init__()
         self.board = chess.Board()
         self.mode = '1'
+        self.color = True
         self.ai = self.createAI(ChessAi002)
         self.initUI()
 
     def initUI(self):
         # Componentes da interface
+        self.ai_color = QLabel(self)
         self.image_label = QLabel(self)
         self.player_move_field = QLineEdit(self)
         self.play_button = QPushButton('Jogar', self)
         self.play_button.clicked.connect(self.play_move)
-
         self.error_label = QLabel(self)
         self.error_label.setStyleSheet("color: red")
 
         # Layout principal
         main_layout = QHBoxLayout()
 
+        self.ai_color.setText(f"{'Branco' if self.color else 'Preto'}")
         # Layout para a imagem
         chess_layout = QVBoxLayout()
+        chess_layout.addWidget(self.ai_color)
         chess_layout.addWidget(self.image_label)
 
         # Layout para o input_field
@@ -50,6 +53,11 @@ class ChessGameGUI(QWidget):
 
         # Layout para os modos de jogo
         mode_layout = QVBoxLayout()
+
+        # Botão para trocar de cor
+        change_color_button = QPushButton('Trocar cor', self)
+        change_color_button.clicked.connect(lambda: self.change_color())
+        mode_layout.addWidget(change_color_button)
 
         # Botão "Jogar contra IA"
         play_vs_ai_button = QPushButton('Jogar contra IA', self)
@@ -80,18 +88,34 @@ class ChessGameGUI(QWidget):
         self.setLayout(main_layout)
         self.update_board_image()
 
+        self.player_move_field.setDisabled(True)
+        self.play_button.setDisabled(True)
         # Ajustes da janela
         self.setGeometry(100, 100, 800, 600)
         self.setWindowTitle('Chess Game')
         self.show()
 
+    def change_color(self):
+        self.color = not self.color
+        self.board = chess.Board()
+
+        self.player_move_field.setDisabled(True)
+        self.play_button.setDisabled(True)
+        self.error_label.clear()
+        # Update Board
+        self.ai_color.setText(f"IA: {'Branco' if self.color else 'Preto'}")
+        self.update_board_image()
+
     def play_move(self):
-        padrao = re.compile(r'^[a-z][0-9][a-z][0-9]$')
+        # Padrões 4 letras indicando [a-h][1-8][a-h][1-8](N,B,R,Q)?
+        # Padrão 2-3 letras indicando (N,B,R,Q)?[a-h][1-8](N,B,R,Q)?
+        padrao = re.compile(r'^([a-h][0-8])?[a-h][0-8](N,B,R,Q)?$')
+        padrao2 = re.compile(r'(N,B,R,Q)?[a-h][1-8](N,B,R,Q)?')
         move = self.player_move_field.text()
         if not move:
             self.error_label.setText("Erro: O campo de entrada está vazio.")
             return
-        elif not bool(padrao.match(move)):
+        elif not bool(padrao.match(move)) and not bool(padrao2.match(move)):
             self.error_label.setText("Erro: Jogada Invalida.")
             return
         else:
@@ -113,6 +137,9 @@ class ChessGameGUI(QWidget):
         if mode == '1':
             self.player_move_field.setDisabled(False)
             self.play_button.setDisabled(False)
+            self.error_label.clear()
+            if self.color:
+                self.ai_play()
         elif mode == '2':
             self.player_move_field.setDisabled(True)
             self.play_button.setDisabled(True)
@@ -151,7 +178,7 @@ class ChessGameGUI(QWidget):
         self.error_label.setText(f"Jogada: {move}")
         self.update_board_image()
 
-    def ai_game(self, n_games=10):
+    def ai_game(self, n_games=1):
         ai_white = self.createAI(ChessAiv3, 'ChessAiv3')
         ai_black = self.createAI(ChessAi002)
 
@@ -177,6 +204,7 @@ class ChessGameGUI(QWidget):
                     st = time.time_ns()
                     move = ai_white.make_move(self.board, 3)  # 96s / 113s
                     # move = ai_white.mcts(self.board)
+                    print(f"White: {time.time_ns() - st}")
                     time_w += time.time_ns() - st
                     movehistory.append(move)
                     self.board.push(move)
@@ -187,6 +215,7 @@ class ChessGameGUI(QWidget):
                 else:
                     st = time.time_ns()
                     move = ai_black.make_move(self.board, 3)
+                    print(f"Black: {time.time_ns() - st}")
                     time_b += time.time_ns() - st
                     movehistory.append(move)
                     self.board.push(move)

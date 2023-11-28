@@ -1,12 +1,10 @@
-ChessAiv3 = """
+ChessAiv3 = '''
 import chess
 import chess.polyglot
-from random import choice
 
 
 class ChessAiv3:
-    def __init__(self, color=True):
-        self.color = color
+    def __init__(self):
         self.polyglot = chess.polyglot.MemoryMappedReader("./books/human.bin")
         self.pawntable = [
             0, 0, 0, 0, 0, 0, 0, 0,
@@ -64,13 +62,15 @@ class ChessAiv3:
             -30, -40, -40, -50, -50, -40, -40, -30,
             -30, -40, -40, -50, -50, -40, -40, -30]
 
-    def evaluate(self, board):
+    def evaluate(self, board: chess.Board):
         if board.is_checkmate():
-            if board.turn == self.color:
+            if board.turn:
                 return -999999999
             else:
                 return 999999999
-        if board.outcome(claim_draw=True) is not None:
+        if board.is_stalemate():
+            return 0
+        if board.is_insufficient_material():
             return 0
 
         wp = len(board.pieces(chess.PAWN, chess.WHITE))
@@ -84,34 +84,40 @@ class ChessAiv3:
         wq = len(board.pieces(chess.QUEEN, chess.WHITE))
         bq = len(board.pieces(chess.QUEEN, chess.BLACK))
 
-        material = 100 * (int(wp) - int(bp)) + 320 * (int(wn) - int(bn)) + 330 * (int(wb) - int(bb)) + 500 * (int(wr) - int(br)) + 900 * (int(wq) - int(bq))
-        # print(material)
+        material = 100 * (wp - bp) + 320 * (wn - bn) + 330 * (wb - bb) + 500 * (wr - br) + 900 * (wq - bq)
         color_multiplier = 1 if board.turn else -1
 
         pawnsq = sum(color_multiplier * self.pawntable[i] for i in board.pieces(chess.PAWN, chess.WHITE))
+        pawnsq = pawnsq + sum([-self.pawntable[chess.square_mirror(i)] for i in board.pieces(chess.PAWN, chess.BLACK)])
         knightsq = sum(color_multiplier * self.knightstable[i] for i in board.pieces(chess.KNIGHT, chess.WHITE))
+        knightsq = knightsq + sum(
+            [-self.knightstable[chess.square_mirror(i)] for i in board.pieces(chess.KNIGHT, chess.BLACK)])
         bishopsq = sum(color_multiplier * self.bishopstable[i] for i in board.pieces(chess.BISHOP, chess.WHITE))
+        bishopsq = bishopsq + sum(
+            [-self.bishopstable[chess.square_mirror(i)] for i in board.pieces(chess.BISHOP, chess.BLACK)])
         rooksq = sum(color_multiplier * self.rookstable[i] for i in board.pieces(chess.ROOK, chess.WHITE))
+        rooksq = rooksq + sum([-self.rookstable[chess.square_mirror(i)] for i in board.pieces(chess.ROOK, chess.BLACK)])
         queensq = sum(color_multiplier * self.queenstable[i] for i in board.pieces(chess.QUEEN, chess.WHITE))
+        queensq = queensq + sum(
+            [-self.queenstable[chess.square_mirror(i)] for i in board.pieces(chess.QUEEN, chess.BLACK)])
         kingsq = sum(color_multiplier * self.kingstable[i] for i in board.pieces(chess.KING, chess.WHITE))
+        kingsq = kingsq + sum([-self.kingstable[chess.square_mirror(i)] for i in board.pieces(chess.KING, chess.BLACK)])
 
-        mobility = len(list(board.legal_moves)) if board.turn else -len(list(board.legal_moves))
-
-        valor = material + pawnsq + knightsq + bishopsq + rooksq + queensq + kingsq + mobility
+        valor = material + pawnsq + knightsq + bishopsq + rooksq + queensq + kingsq
         if board.turn:
             return valor
         else:
             return -valor
 
-    def negac_star(self, board, depth: int, alpha: int, beta: int):
+    def negac_star(self, board: chess.Board, depth: int, alpha: int, beta: int, color: int):
         if depth == 0 or board.is_game_over():
-            return self.evaluate(board)
+            return color * self.evaluate(board)
 
         legal_moves = list(board.legal_moves)
 
         for move in legal_moves:
             board.push(move)
-            value = -self.negac_star(board, depth - 1, -beta, -alpha)
+            value = -self.negac_star(board, depth - 1, -beta, -alpha, -color)
             board.pop()
 
             if value > alpha:
@@ -121,16 +127,17 @@ class ChessAiv3:
 
         return alpha
 
-    def negac_star_root(self, board, depth: int):
+    def negac_star_root(self, board: chess.Board, depth: int):
         best_move = None
         alpha = -9999999999
         beta = 9999999999
+        color = 1 if board.turn else -1
 
         legal_moves = list(board.legal_moves)
 
         for move in legal_moves:
             board.push(move)
-            value = -self.negac_star(board, depth - 1, -beta, -alpha)
+            value = -self.negac_star(board, depth - 1, -beta, -alpha, -color)
             board.pop()
 
             if value > alpha:
@@ -139,7 +146,7 @@ class ChessAiv3:
 
         return best_move
 
-    def make_move(self, board, depth: int):
+    def make_move(self, board: chess.Board, depth: int):
         if board.fullmove_number < 8:
             try:
                 move = self.polyglot.weighted_choice(board).move
@@ -156,4 +163,4 @@ class ChessAiv3:
             return choice(legal_moves)
         else:
             return None
-"""
+# '''
