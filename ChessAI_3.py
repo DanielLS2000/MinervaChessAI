@@ -1,22 +1,13 @@
+ChessAiv3 = """
 import chess
 import chess.polyglot
-
-import random
-import math
 from random import choice
 
 
-class Node:
-    def __init__(self, board, parent=None):
-        self.board = board
-        self.parent = parent
-        self.children = []
-        self.visits = 0
-        self.value = 0
-
-
 class ChessAiv3:
-    def __init__(self):
+    def __init__(self, color=True):
+        self.color = color
+        self.polyglot = chess.polyglot.MemoryMappedReader("./books/human.bin")
         self.pawntable = [
             0, 0, 0, 0, 0, 0, 0, 0,
             5, 10, 10, -20, -20, 10, 10, 5,
@@ -75,13 +66,11 @@ class ChessAiv3:
 
     def evaluate(self, board):
         if board.is_checkmate():
-            if board.turn:
+            if board.turn == self.color:
                 return -999999999
             else:
                 return 999999999
-        if board.is_stalemate():
-            return 0
-        if board.is_insufficient_material():
+        if board.outcome(claim_draw=True) is not None:
             return 0
 
         wp = len(board.pieces(chess.PAWN, chess.WHITE))
@@ -95,7 +84,8 @@ class ChessAiv3:
         wq = len(board.pieces(chess.QUEEN, chess.WHITE))
         bq = len(board.pieces(chess.QUEEN, chess.BLACK))
 
-        material = 100 * (wp - bp) + 320 * (wn - bn) + 330 * (wb - bb) + 500 * (wr - br) + 900 * (wq - bq)
+        material = 100 * (int(wp) - int(bp)) + 320 * (int(wn) - int(bn)) + 330 * (int(wb) - int(bb)) + 500 * (int(wr) - int(br)) + 900 * (int(wq) - int(bq))
+        # print(material)
         color_multiplier = 1 if board.turn else -1
 
         pawnsq = sum(color_multiplier * self.pawntable[i] for i in board.pieces(chess.PAWN, chess.WHITE))
@@ -105,22 +95,13 @@ class ChessAiv3:
         queensq = sum(color_multiplier * self.queenstable[i] for i in board.pieces(chess.QUEEN, chess.WHITE))
         kingsq = sum(color_multiplier * self.kingstable[i] for i in board.pieces(chess.KING, chess.WHITE))
 
-        valor = material + pawnsq + knightsq + bishopsq + rooksq + queensq + kingsq
+        mobility = len(list(board.legal_moves)) if board.turn else -len(list(board.legal_moves))
+
+        valor = material + pawnsq + knightsq + bishopsq + rooksq + queensq + kingsq + mobility
         if board.turn:
             return valor
         else:
             return -valor
-
-    def monte_carlo_search(self, board, depth):
-        # Selection
-
-        # Expansion
-
-        # Simulation
-
-        # Backpropagation
-
-        pass
 
     def negac_star(self, board, depth: int, alpha: int, beta: int):
         if depth == 0 or board.is_game_over():
@@ -159,10 +140,9 @@ class ChessAiv3:
         return best_move
 
     def make_move(self, board, depth: int):
-        if board.turn < 6:
+        if board.fullmove_number < 8:
             try:
-                # return self.negac_star_root(board, depth)
-                move = chess.polyglot.MemoryMappedReader("./books/human.bin").weighted_choice(board).move
+                move = self.polyglot.weighted_choice(board).move
                 return move
             except:
                 return self.negac_star_root(board, depth)
@@ -176,3 +156,4 @@ class ChessAiv3:
             return choice(legal_moves)
         else:
             return None
+"""

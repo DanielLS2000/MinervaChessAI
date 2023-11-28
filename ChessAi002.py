@@ -1,4 +1,6 @@
+ChessAi002 = '''
 import chess
+import chess.polyglot
 import time
 
 from random import choice
@@ -6,6 +8,7 @@ from random import choice
 
 class ChessAi002:
     def __init__(self):
+        self.polyglot = chess.polyglot.MemoryMappedReader("./books/human.bin")
         self.pawntable = [
             0, 0, 0, 0, 0, 0, 0, 0,
             5, 10, 10, -20, -20, 10, 10, 5,
@@ -138,7 +141,14 @@ class ChessAi002:
         return best_move
 
     def make_move(self, board, depth: int):
-        return self.negac_star_root(board, depth)
+        if board.fullmove_number < 8:
+            try:
+                move = self.polyglot.weighted_choice(board).move
+                return move
+            except:
+                return self.negac_star_root(board, depth)
+        else:
+            return self.negac_star_root(board, depth)
 
     @staticmethod
     def move_random(board):
@@ -147,3 +157,4 @@ class ChessAi002:
             return choice(legal_moves)
         else:
             return None
+'''

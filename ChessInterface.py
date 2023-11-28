@@ -18,7 +18,7 @@ class ChessGameGUI(QWidget):
         super().__init__()
         self.board = chess.Board()
         self.mode = '1'
-        self.ai = ChessAi002()
+        self.ai = self.createAI(ChessAi002)
         self.initUI()
 
     def initUI(self):
@@ -101,7 +101,7 @@ class ChessGameGUI(QWidget):
                 self.board.push(move)
                 self.update_board_image()
                 self.ai_play()
-                self.error_label.setText(f"Jogada: {move}")
+                # self.error_label.setText(f"Jogada: {move}")
             else:
                 self.error_label.setText("Erro: Jogada Invalida.")
 
@@ -122,6 +122,13 @@ class ChessGameGUI(QWidget):
             self.play_button.setDisabled(True)
             self.stockfish_game()
 
+    def createAI(self, source_code, ai_name='ChessAi002'):
+        compiled_code = compile(source_code, '<string>', 'exec')
+        namespace = {}
+        exec(compiled_code, namespace)
+        AI = namespace[ai_name]
+        return AI()
+
     def update_board_image(self):
         try:
             lastmove = self.board.peek()
@@ -137,7 +144,7 @@ class ChessGameGUI(QWidget):
         self.image_label.setPixmap(pixmap)
 
     def ai_play(self):
-        move = self.ai.negac_star_root(self.board, 3)
+        move = self.ai.negac_star_root(self.board, 4)
         self.board.push(move)
 
         # Update Board
@@ -145,8 +152,8 @@ class ChessGameGUI(QWidget):
         self.update_board_image()
 
     def ai_game(self, n_games=10):
-        ai_white = ChessAiv3()
-        ai_black = ChessAi002()
+        ai_white = self.createAI(ChessAiv3, 'ChessAiv3')
+        ai_black = self.createAI(ChessAi002)
 
         match_history = {
             "White": 0,
@@ -212,7 +219,7 @@ class ChessGameGUI(QWidget):
               f"Time per Match: {(match_history['Total Time'] / 1000000000) / n_games}s/match\n")
 
     def stockfish_game(self, n_games=10):
-        ai_white = ChessAi002()
+        ai_white = self.createAI(ChessAi002)
         engineStockFish = chess.engine.SimpleEngine.popen_uci("./OtherEngines/stockfish/stockfish.exe")
 
         match_history = {
@@ -235,10 +242,11 @@ class ChessGameGUI(QWidget):
             while not self.board.is_game_over():
                 if self.board.turn:
                     st = time.time_ns()
-                    move = ai_white.negac_star_root(self.board, 3)
+                    #move = ai_white.negac_star_root(self.board, 3)
+                    move = engineStockFish.play(self.board, chess.engine.Limit(time=0.1))
                     time_w += time.time_ns() - st
-                    movehistory.append(move)
-                    self.board.push(move)
+                    movehistory.append(move.move)
+                    self.board.push(move.move)
 
                     # Update board
                     self.update_board_image()
