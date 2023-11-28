@@ -1,7 +1,11 @@
-from ChessAI_3 import createAI
 import chess
 import chess.polyglot
+import chess.engine
 
-from random import choice
+ai = chess.engine.SimpleEngine.popen_uci("./OtherEngines/stockfish/stockfish.exe")
 
-ai = createAI()
+board = chess.Board()
+info = ai.analyse(board, chess.engine.Limit(time=0.1))
+score = info['score']
+print(score.relative.score())
+# Score: PovScore(Mate(+1), WHITE)

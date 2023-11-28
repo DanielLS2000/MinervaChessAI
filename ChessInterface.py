@@ -1,13 +1,13 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QHBoxLayout, \
-    QSizePolicy
+    QSizePolicy, QMessageBox
 import chess
 import chess.svg
 import chess.engine
 from io import BytesIO
 from PyQt5.QtGui import QPixmap
 from ChessAI_3 import ChessAiv3
-from ChessAi002 import ChessAi002
+from ChessAi002 import ChessAiv3N
 import time
 import re
 
@@ -18,7 +18,7 @@ class ChessGameGUI(QWidget):
         self.board = chess.Board()
         self.mode = '1'
         self.color = True
-        self.ai = self.createAI(ChessAi002)
+        self.ai = self.createAI(ChessAiv3)
         self.initUI()
 
     def initUI(self):
@@ -87,12 +87,22 @@ class ChessGameGUI(QWidget):
         self.setLayout(main_layout)
         self.update_board_image()
 
+        # Config
         self.player_move_field.setDisabled(True)
         self.play_button.setDisabled(True)
+        ai_vs_ai_button.setDisabled(True)
+        play_vs_stockfish_button.setDisabled(True)
+
         # Ajustes da janela
         self.setGeometry(100, 100, 800, 600)
         self.setWindowTitle('Chess Game')
         self.show()
+
+    def show_popup(self, title, message):
+        msg_box = QMessageBox()
+        msg_box.setWindowTitle(title)
+        msg_box.setText(message)
+        msg_box.exec_()
 
     def change_color(self):
         self.color = not self.color
@@ -106,8 +116,7 @@ class ChessGameGUI(QWidget):
         self.update_board_image()
 
     def play_move(self):
-        # Padrões 4 letras indicando [a-h][1-8][a-h][1-8](N,B,R,Q)?
-        # Padrão 2-3 letras indicando (N,B,R,Q)?[a-h][1-8](N,B,R,Q)?
+        # Padrões 4 – 5 letras indicando [a-h][1-8][a-h][1-8](n|b|r|q)?
         padrao = re.compile(r'^([a-h][0-8])[a-h][0-8]([n|b|r|q])?$')
         move = self.player_move_field.text()
         if not move:
@@ -126,10 +135,21 @@ class ChessGameGUI(QWidget):
                 self.ai_play()
             else:
                 self.error_label.setText("Erro: Jogada não existe Invalida.")
+        if self.board.is_game_over():
+            outcome = self.board.outcome()
+            winner = outcome.winner
+            title = outcome.termination.name
+            if winner:
+                message = "Brancas Venceram!"
+            elif winner is None:
+                message = "Empate!"
+            else:
+                message = "Pretas Venceram!"
+            self.show_popup(title=title, message=message)
 
     def change_mode(self, mode):
         # Reiniciando Jogo
-        self.board = chess.Board("4k3/2P5/8/8/8/8/PP1PPPPP/RNBQKBNR w KQ - 0 1")
+        self.board = chess.Board()
         self.update_board_image()
         self.mode = mode
         if mode == '1':
@@ -147,7 +167,7 @@ class ChessGameGUI(QWidget):
             self.play_button.setDisabled(True)
             self.stockfish_game()
 
-    def createAI(self, source_code, ai_name='ChessAi002'):
+    def createAI(self, source_code, ai_name='ChessAiv3'):
         compiled_code = compile(source_code, '<string>', 'exec')
         namespace = {}
         exec(compiled_code, namespace)
@@ -169,16 +189,16 @@ class ChessGameGUI(QWidget):
         self.image_label.setPixmap(pixmap)
 
     def ai_play(self):
-        move = self.ai.negac_star_root(self.board, 4)
+        move = self.ai.make_move(self.board, 4)
         self.board.push(move)
 
         # Update Board
         self.error_label.setText(f"Jogada: {move}")
         self.update_board_image()
 
-    def ai_game(self, n_games=10):
+    def ai_game(self, n_games=1):
         ai_white = self.createAI(ChessAiv3, 'ChessAiv3')
-        ai_black = self.createAI(ChessAi002)
+        ai_black = ChessAiv3N()
 
         match_history = {
             "ChessAiv3": 0,
@@ -200,7 +220,7 @@ class ChessGameGUI(QWidget):
             while not self.board.is_game_over():
                 if self.board.turn:
                     st = time.time_ns()
-                    move = ai_white.make_move(self.board, 3)  # 96s / 113s
+                    move = ai_white.make_move(self.board, 3)
                     time_w += time.time_ns() - st
                     movehistory.append(move)
                     self.board.push(move)
@@ -235,69 +255,33 @@ class ChessGameGUI(QWidget):
             print(f"ChessAi002 AI: {time_b / 1000000000}s")
             print(f"rounds {self.board.fullmove_number}\n")
 
-        for i in range(n_games):
-            game_start = time.time_ns()
-            movehistory = []
-            self.board = chess.Board()
-            self.update_board_image()
-            time_w = 0
-            time_b = 0
-
-            while not self.board.is_game_over():
-                if self.board.turn:
-                    st = time.time_ns()
-                    move = ai_black.make_move(self.board, 3)
-                    time_w += time.time_ns() - st
-                    movehistory.append(move)
-                    self.board.push(move)
-
-                    # Update board
-                    self.update_board_image()
-                    QApplication.processEvents()
-                else:
-                    st = time.time_ns()
-                    move = ai_white.make_move(self.board, 3)
-                    time_b += time.time_ns() - st
-                    movehistory.append(move)
-                    self.board.push(move)
-
-                    # Update Board
-                    self.update_board_image()
-                    QApplication.processEvents()
-
-            game_finish = time.time_ns()
-            match_history["Total Time"] += (game_finish - game_start)
-            match_history["ChessAi002_time"] += time_w
-            match_history["ChessAiv3_time"] += time_b
-            print(self.board.outcome().winner)
-            if self.board.outcome().winner:
-                match_history["ChessAi002"] += 1
-            elif self.board.outcome().winner == False:
-                match_history["ChessAiv3"] += 1
-            else:
-                match_history["Draw"] += 1
-            print(f"{i + 1}º game time: " + str((game_finish - game_start) / 1000000) + "ms")
-            print(f"ChessAi002 AI: {time_w / 1000000000}s")
-            print(f"ChessAiv3 AI: {time_b / 1000000000}s")
-            print(f"rounds {self.board.fullmove_number}\n")
-
         print(f"ChessAi002 wins: {match_history['ChessAi002']}\n"
               f"ChessAiv3 wins: {match_history['ChessAiv3']}\n"
               f"Draws: {match_history['Draw']}\n"
               f"ChessAi002 time per match: {(match_history['ChessAi002_time'] / 1000000000) / n_games}s/match\n"
               f"ChessAiv3 time per match: {(match_history['ChessAiv3_time'] / 1000000000) / n_games}s/match\n"
               f"Time per Match: {(match_history['Total Time'] / 1000000000) / n_games}s/match\n")
+        outcome = self.board.outcome()
+        winner = outcome.winner
+        title = outcome.termination.name
+        if winner:
+            message = "Brancas Venceram!"
+        elif winner is None:
+            message = "Empate!"
+        else:
+            message = "Pretas Venceram!"
+        self.show_popup(title=title, message=message)
 
-    def stockfish_game(self, n_games=10):
-        ai_white = self.createAI(ChessAi002)
+    def stockfish_game(self, n_games=2):
+        my_ai = self.createAI(ChessAiv3, 'ChessAiv3')
         engineStockFish = chess.engine.SimpleEngine.popen_uci("./OtherEngines/stockfish/stockfish.exe")
 
         match_history = {
-            "White": 0,
-            "Black": 0,
+            "My Ai": 0,
+            "Stockfish": 0,
             "Draw": 0,
-            "white_time": 0,
-            "black_time": 0,
+            "Ai_time": 0,
+            "Stockfish_time": 0,
             "Total Time": 0
         }
 
@@ -312,11 +296,10 @@ class ChessGameGUI(QWidget):
             while not self.board.is_game_over():
                 if self.board.turn:
                     st = time.time_ns()
-                    #move = ai_white.negac_star_root(self.board, 3)
-                    move = engineStockFish.play(self.board, chess.engine.Limit(time=0.1))
+                    move = my_ai.make_move(self.board, 3)
                     time_w += time.time_ns() - st
-                    movehistory.append(move.move)
-                    self.board.push(move.move)
+                    movehistory.append(move)
+                    self.board.push(move)
 
                     # Update board
                     self.update_board_image()
@@ -334,24 +317,69 @@ class ChessGameGUI(QWidget):
             game_finish = time.time_ns()
             print(self.board.outcome().winner)
             if self.board.outcome().winner:
-                match_history["White"] += 1
+                match_history["My AI"] += 1
             elif self.board.outcome().winner == False:
-                match_history["Black"] += 1
+                match_history["Stockfish"] += 1
             else:
                 match_history["Draw"] += 1
             match_history["Total Time"] += (game_finish - game_start)
             print(f"{i + 1}º game time: {(game_finish - game_start) / 1000000}ms")
             print(f"My AI: {time_w / 1000000000}s")
-            match_history["white_time"] += time_w
+            match_history["Ai_time"] += time_w
             print(f"Stockfish: {time_b / 1000000000}s")
-            match_history["black_time"] += time_b
+            match_history["Stockfish_time"] += time_b
             print(f"rounds {self.board.fullmove_number}")
 
-        print(f"ChessAI White wins: {match_history['White']}\n"
-              f"StockFish wins: {match_history['Black']}\n"
+        for i in range(n_games):
+            game_start = time.time_ns()
+            movehistory = []
+            self.board = chess.Board()
+            self.update_board_image()
+            time_w = 0
+            time_b = 0
+
+            while not self.board.is_game_over():
+                if self.board.turn:
+                    st = time.time_ns()
+                    move = engineStockFish.play(self.board, chess.engine.Limit(time=0.1))
+                    time_w += time.time_ns() - st
+                    movehistory.append(move.move)
+                    self.board.push(move.move)
+
+                    # Update board
+                    self.update_board_image()
+                    QApplication.processEvents()
+                else:
+                    st = time.time_ns()
+                    move = my_ai.make_move(self.board, 3)
+                    time_b += time.time_ns() - st
+                    movehistory.append(move)
+                    self.board.push(move)
+                    # Update Board
+                    self.update_board_image()
+                    QApplication.processEvents()
+
+            game_finish = time.time_ns()
+            print(self.board.outcome().winner)
+            if self.board.outcome().winner:
+                match_history["Stockfish"] += 1
+            elif self.board.outcome().winner == False:
+                match_history["My Ai"] += 1
+            else:
+                match_history["Draw"] += 1
+            match_history["Total Time"] += (game_finish - game_start)
+            print(f"{i + 1}º game time: {(game_finish - game_start) / 1000000}ms")
+            print(f"Stockfish: {time_w / 1000000000}s")
+            match_history["Stockfish_time"] += time_w
+            print(f"My AI: {time_b / 1000000000}s")
+            match_history["Ai_time"] += time_b
+            print(f"rounds {self.board.fullmove_number}")
+
+        print(f"ChessAI wins: {match_history['My Ai']}\n"
+              f"StockFish wins: {match_history['Stockfish']}\n"
               f"Draws: {match_history['Draw']}\n"
-              f"White time per match: {(match_history['white_time'] / 1000000000) / n_games}s\n"
-              f"Black time per match: {(match_history['black_time'] / 1000000000) / n_games}s\n"
+              f"Stockfish time per match: {(match_history['Stockfish_time'] / 1000000000) / n_games}s\n"
+              f"My Ai time per match: {(match_history['Ai_time'] / 1000000000) / n_games}s\n"
               f"Time per Match: {(match_history['Total Time'] / 1000000000) / n_games}s/match\n")
 
 
