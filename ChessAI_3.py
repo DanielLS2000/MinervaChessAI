@@ -98,12 +98,22 @@ class ChessAiv3:
         material = 100 * (wp - bp) + 320 * (wn - bn) + 330 * (wb - bb) + 500 * (wr - br) + 900 * (wq - bq)
 
         pawn_score = sum(self.pawntable[i] for i in wp_map)
-        pawn_score -=sum(self.pawntable[i] for i in bp_map)
+        pawn_score += sum([-self.pawntable[chess.square_mirror(i)] for i in bp_map])
+
         knight_score = sum(self.knightstable[i] for i in wn_map)
+        knight_score += sum([-self.knightstable[chess.square_mirror(i)] for i in bn_map])
+
         bishop_score = sum(self.bishopstable[i] for i in wb_map)
+        bishop_score += sum([-self.bishopstable[chess.square_mirror(i)] for i in bb_map])
+
         rook_score = sum(self.rookstable[i] for i in wr_map)
+        rook_score += sum([-self.rookstable[chess.square_mirror(i)] for i in br_map])
+
         queen_score = sum(self.queenstable[i] for i in wq_map)
+        queen_score += sum([-self.queenstable[chess.square_mirror(i)] for i in bq_map])
+
         king_score = sum(self.kingstable[i] for i in board.pieces(chess.KING, chess.WHITE))
+        king_score += sum([-self.kingstable[chess.square_mirror(i)] for i in board.pieces(chess.KING, chess.BLACK)])
 
         valor = material + pawn_score + knight_score + bishop_score + rook_score + queen_score + king_score
         return valor

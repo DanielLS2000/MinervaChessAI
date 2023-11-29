@@ -196,7 +196,7 @@ class ChessGameGUI(QWidget):
         self.error_label.setText(f"Jogada: {move}")
         self.update_board_image()
 
-    def ai_game(self, n_games=1):
+    def ai_game(self, n_games=5):
         ai_white = self.createAI(ChessAiv3, 'ChessAiv3')
         ai_black = ChessAiv3N()
 
@@ -220,7 +220,7 @@ class ChessGameGUI(QWidget):
             while not self.board.is_game_over():
                 if self.board.turn:
                     st = time.time_ns()
-                    move = ai_white.make_move(self.board, 3)
+                    move = ai_black.make_move(self.board, 3)
                     time_w += time.time_ns() - st
                     movehistory.append(move)
                     self.board.push(move)
@@ -230,7 +230,8 @@ class ChessGameGUI(QWidget):
                     QApplication.processEvents()
                 else:
                     st = time.time_ns()
-                    move = ai_black.make_move(self.board, 3)
+
+                    move = ai_white.make_move(self.board, 3)
                     time_b += time.time_ns() - st
                     movehistory.append(move)
                     self.board.push(move)
