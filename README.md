@@ -1,36 +1,37 @@
 # MinervaChessAI
-Certamente! Aqui estão os comandos:
+Este guia fornece instruções passo a passo sobre como configurar um ambiente virtual Python, instalar pacotes a partir de um arquivo requirements.txt e executar o arquivo ChessInterface.py.
 
-Criar um Ambiente Virtual:
-Ativar o Ambiente Virtual (Linux/Mac):
+Configurando o Ambiente Virtual
 
-python -m venv nome_do_seu_ambiente
+1. Instale o Virtualenv (se ainda não estiver instalado):
+   pip install virtualenv
 
+2. Crie um Ambiente Virtual:
+   virtualenv nome_do_seu_ambiente -p python3
 
-Ou no Windows:
+Substitua nome_do_seu_ambiente pelo nome desejado para seu ambiente virtual.
 
-source nome_do_seu_ambiente/bin/activate
-nome_do_seu_ambiente\Scripts\activate
+3. Ative o Ambiente Virtual:
 
+No Windows:
+   nome_do_seu_ambiente\Scripts\activate
 
-Instalar Pacotes no Ambiente Virtual:
-Instale os pacotes que você precisa usando o pip. Por exemplo:
+No macOS e Linux:
+   source nome_do_seu_ambiente/bin/activate
 
-pip install pacote1 pacote2
+Instalando Pacotes do requirements.txt
 
+1. Navegue até o Diretório do Projeto:
+   cd caminho/do/seu/projeto
 
-Salvar os Pacotes em um Arquivo requirements.txt:
+2. Instale os Pacotes do requirements.txt:
+   pip install -r requirements.txt
 
-pip freeze > requirements.txt
-Isso criará um arquivo requirements.txt que lista todos os pacotes instalados no ambiente virtual.
+Certifique-se de que o arquivo requirements.txt esteja presente no diretório do projeto.
 
-Instalar Pacotes do requirements.txt:
+Executando o ChessInterface
 
-pip install -r requirements.txt
+1. Execute o Arquivo ChessInterface.py:
+   python ChessInterface.py
 
-Este comando instala todos os pacotes listados no arquivo requirements.txt.
-
-Lembre-se de substituir nome_do_seu_ambiente pelo nome desejado para o ambiente virtual e ajustar a lista de pacotes conforme necessário.
-No prompt: digite o comando python para criar um ambiente virtual python, em seguida um comando para salvar os pacotes instalados do pip em um arquivo chamado requirements.txt, e por fim um comando que instale esses pacotes do arquivo requirements.txt no ambiente virtual python.
-Lembre-se de depois de criar o ambiente virtual fazer instalação do PyQt5 e do chess antes de salvar nos requirements.
- 
+Certifique-se de estar no ambiente virtual criado antes de executar este comando.
